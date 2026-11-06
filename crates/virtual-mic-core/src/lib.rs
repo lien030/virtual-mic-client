@@ -1,4 +1,4 @@
-//! Direct PCM injection into the Virtual Mic capture endpoint.
+//! User-mode Rust client API for streaming PCM into the Virtual Mic capture endpoint.
 #![doc = include_str!("../../../README.md")]
 #![cfg(windows)]
 

@@ -95,6 +95,7 @@ pub struct VirtualMic {
 }
 
 impl VirtualMic {
+    /// Opens the single writer connection and checks the driver protocol.
     pub fn open() -> Result<Self> {
         let mic = Self {
             file: OpenOptions::new()
@@ -118,6 +119,7 @@ impl VirtualMic {
         .status()
     }
 
+    /// Returns the current capture format, stream generation, queue, and frame counters.
     pub fn status(&self) -> Result<Status> {
         let mut status = Status::default();
         let output = unsafe {
@@ -159,10 +161,12 @@ impl VirtualMic {
         self.write_for(status, pcm)
     }
 
+    /// Converts input PCM to the active capture format as each packet is written.
     pub fn into_converting(self, input: AudioFormat) -> Result<ConvertingWriter> {
         ConvertingWriter::new(self, input)
     }
 
+    /// Discards audio queued in the driver.
     pub fn clear(&mut self) -> Result<()> {
         self.ioctl(CLEAR, &[], &mut []).map(|_| ())
     }
@@ -251,6 +255,7 @@ impl VirtualMic {
 mod tests {
     use super::*;
     use std::io::{Read, Write};
+
     #[test]
     #[ignore = "requires the installed Virtual Mic driver"]
     fn installed_driver_validates_protocol_and_writer_lifetime() {
@@ -300,6 +305,7 @@ mod tests {
         drop(mic);
         VirtualMic::open().unwrap();
     }
+
     #[test]
     fn c_protocol_layout() {
         assert_eq!(size_of::<AudioFormat>(), 8);

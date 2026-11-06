@@ -28,6 +28,7 @@ impl ConvertingWriter {
     pub fn status(&self) -> Result<Status> {
         self.mic.status()
     }
+
     pub fn input_format(&self) -> AudioFormat {
         self.input
     }
@@ -74,6 +75,7 @@ impl ConvertingWriter {
         }
     }
 
+    /// Discards pending converted audio, resets the converter, and clears the driver queue.
     pub fn clear(&mut self) -> Result<()> {
         self.pending.clear();
         self.offset = 0;

@@ -3,6 +3,7 @@ name = "virtual-mic-demo"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "CLI demo and WASAPI audio checks for Virtual Mic Client"
 
 [dependencies]
 virtual-mic-core = { path = "../virtual-mic-core" }

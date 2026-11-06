@@ -3,7 +3,7 @@ name = "virtual-mic-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Direct PCM injection into the Virtual Mic Windows driver"
+description = "User-mode Rust client API for streaming PCM into the Virtual Mic driver"
 
 [dependencies]
 windows.workspace = true
