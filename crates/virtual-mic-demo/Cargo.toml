@@ -1,0 +1,10 @@
+[package]
+name = "virtual-mic-demo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+virtual-mic-core = { path = "../virtual-mic-core" }
+windows.workspace = true
+hound = "3.5.1"

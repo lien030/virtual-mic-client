@@ -1,0 +1,9 @@
+[package]
+name = "virtual-mic-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Direct PCM injection into the Virtual Mic Windows driver"
+
+[dependencies]
+windows.workspace = true

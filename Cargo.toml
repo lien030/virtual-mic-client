@@ -1,0 +1,21 @@
+[workspace]
+members = ["crates/virtual-mic-core", "crates/virtual-mic-demo"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[workspace.dependencies]
+windows = { version = "0.62.2", features = [
+    "Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_IO",
+    "Win32_Security", "Win32_System_Com", "Win32_System_Com_StructuredStorage",
+    "Win32_Media_MediaFoundation", "Win32_Media_Audio", "Win32_System_Threading",
+    "Win32_System_Console", "Win32_System_Variant", "Win32_System_Memory",
+    "Win32_UI_Shell_PropertiesSystem",
+] }
+
+[profile.release]
+lto = "thin"
+strip = true
