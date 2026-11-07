@@ -69,6 +69,8 @@ impl ConvertingWriter {
         if let Some(converter) = &mut self.converter {
             self.pending = converter.push(chunk)?;
             self.offset = 0;
+            // Send now so a pause in the input cannot hold this audio back; errors resurface on the next call.
+            let _ = self.flush_pending();
             Ok(frames)
         } else {
             self.mic.write_for(status, chunk)
@@ -114,18 +116,7 @@ impl ConvertingWriter {
         while self.offset < self.pending.len() {
             let status = self.status()?;
             self.check_generation(status)?;
-            let available =
-                (status.format.sample_rate / 50).saturating_sub(status.queued_frames) as usize;
-            if available == 0 {
-                return Err(Error::WouldBlock);
-            }
-            let end = self
-                .pending
-                .len()
-                .min(self.offset + available * status.format.frame_bytes());
-            let accepted = self
-                .mic
-                .write_for(status, &self.pending[self.offset..end])?;
+            let accepted = self.mic.write_for(status, &self.pending[self.offset..])?;
             if accepted == 0 {
                 return Err(Error::WouldBlock);
             }

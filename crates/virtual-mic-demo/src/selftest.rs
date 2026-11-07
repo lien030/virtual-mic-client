@@ -104,6 +104,7 @@ fn case(
                 return Err("clear did not empty the audio queue".into());
             }
         }
+        let base = mic.status()?.written_frames;
         let mut sink = if strict {
             Sink::Strict(mic)
         } else {
@@ -130,6 +131,12 @@ fn case(
         }
         if sent != total {
             return Err(format!("send deadline: {sent}/{total} frames").into());
+        }
+        // Converted audio must reach the driver without waiting for another write; the resampler keeps under 1 ms.
+        let expected = total * output.sample_rate as u64 / input.sample_rate as u64;
+        let held = expected.saturating_sub(sink.status()?.written_frames - base);
+        if held > output.sample_rate as u64 / 200 {
+            return Err(format!("{input} -> {output}: writer held back {held} frames").into());
         }
         sink.finish(Duration::from_secs(1))?;
         Ok(())

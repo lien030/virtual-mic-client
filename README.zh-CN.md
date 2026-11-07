@@ -33,6 +33,8 @@
 cargo build --release --workspace
 ```
 
+构建要给其他机器使用的程序前，先在同一个 PowerShell 窗口运行 `$env:RUSTFLAGS = "--remap-path-prefix=$env:USERPROFILE=~"`，这样可执行文件中不会包含你的用户目录路径。
+
 在录音或会议软件中选择 **Virtual Mic Driver by MTT** 并开始采集麦克风，然后运行：
 
 ```powershell
@@ -63,7 +65,7 @@ cargo build --release --workspace
 
 自动转换使用 Windows Media Foundation Resampler，支持采样率和位深转换、单声道复制为双声道，以及双声道取平均转为单声道。转换写入器应在创建它的线程上使用。
 
-音量和静音由发送应用控制。驱动原有的 Windows 拓扑音量和静音控件尚未应用到注入的 PCM。缺少音频时驱动补静音；`clear()` 丢弃排队音频，可用于立即静音。
+Windows 会对共享模式采集（会议应用使用的方式）施加 Virtual Mic 的音量和静音；独占模式采集收到原样的注入 PCM。缺少音频时驱动补静音；`clear()` 丢弃排队音频，可用于立即静音。
 
 ## 接入 Core API
 
@@ -89,7 +91,7 @@ mic.drain(Duration::from_secs(3))?;
 # Ok::<(), virtual_mic_core::Error>(())
 ```
 
-两种写入 API 都返回**已消费的输入帧数**。部分写入后，从 `consumed_frames * input.frame_bytes()` 处继续提交。自动转换写入器每次最多接受 10 ms 输入，保留转换后的待发送数据，并将驱动队列维持在约 20 ms。驱动本身使用 200 ms 环形缓冲区。
+两种写入 API 都返回**已消费的输入帧数**。部分写入后，从 `consumed_frames * input.frame_bytes()` 处继续提交。自动转换写入器每次最多接受 10 ms 输入，转换结果立即发送，驱动队列最多保留约 30 ms。驱动本身使用 200 ms 环形缓冲区。
 
 自动转换时，应在连续数据包之间保持同一个写入器，并重试尚未消费的输入。以下示例发送 100 ms 静音，包含部分写入处理：
 
@@ -164,7 +166,7 @@ writer.finish(Duration::from_secs(3))?;
 .\target\release\virtual-mic-demo.exe selftest --shared
 ```
 
-运行检查前，关闭其他 Virtual Mic 发送和采集应用。每个用例通过 WASAPI 采集注入的测试音，检查各声道的预期频率。严格用例还检查格式拒绝、单写入端限制、缓冲写满和队列清空。
+运行检查前，关闭其他 Virtual Mic 发送和采集应用。运行 `--shared` 前，在 Windows 声音设置中取消 Virtual Mic 静音，并将音量设为 100。每个用例通过 WASAPI 采集注入的测试音，检查各声道的预期频率。严格用例还检查格式拒绝、单写入端限制、缓冲写满和队列清空。转换用例还检查写入器不会在两次写入之间扣住转换后的音频。
 
 ## 开发检查
 

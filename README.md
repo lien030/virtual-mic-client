@@ -33,6 +33,8 @@ Build from the workspace root:
 cargo build --release --workspace
 ```
 
+Before building binaries for other machines, run `$env:RUSTFLAGS = "--remap-path-prefix=$env:USERPROFILE=~"` in the same PowerShell window so the executables do not contain your user folder path.
+
 Select **Virtual Mic Driver by MTT** in a recording or meeting application and start microphone capture. Then run:
 
 ```powershell
@@ -63,7 +65,7 @@ Samples are interleaved and little-endian. A 24-bit sample occupies exactly thre
 
 Automatic conversion uses the Windows Media Foundation Resampler. It handles sample rates and bit depths, duplicates mono into stereo, and averages stereo into mono. Keep a converting writer on the thread that created it.
 
-The sending application controls gain and mute. The driver's existing Windows topology volume and mute controls are not applied to injected PCM. The driver fills missing audio with silence; `clear()` discards queued audio for an immediate mute.
+Windows applies the Virtual Mic level and mute to shared-mode capture, which meeting applications use; exclusive-mode capture receives the injected PCM unchanged. The driver fills missing audio with silence; `clear()` discards queued audio for an immediate mute.
 
 ## Use the Core API
 
@@ -89,7 +91,7 @@ mic.drain(Duration::from_secs(3))?;
 # Ok::<(), virtual_mic_core::Error>(())
 ```
 
-Both write APIs return the number of **input frames consumed**. After a partial write, continue at `consumed_frames * input.frame_bytes()`. The converting writer accepts at most 10 ms of input per call, retains converted output, and keeps the driver queue near 20 ms. The driver itself has a 200 ms ring buffer.
+Both write APIs return the number of **input frames consumed**. After a partial write, continue at `consumed_frames * input.frame_bytes()`. The converting writer accepts at most 10 ms of input per call, sends the converted audio at once, and keeps at most about 30 ms queued in the driver. The driver itself has a 200 ms ring buffer.
 
 For automatic conversion, keep the writer alive across packets and retry the unconsumed input. This example sends 100 ms of silence, including partial-write handling:
 
@@ -164,7 +166,7 @@ With the driver installed, run the audio checks:
 .\target\release\virtual-mic-demo.exe selftest --shared
 ```
 
-Close other Virtual Mic senders and capture applications before running the checks. Each case captures injected test tones through WASAPI and checks the expected frequency in each channel. Strict cases also check format rejection, the single-writer rule, a full buffer, and queue clearing.
+Close other Virtual Mic senders and capture applications before running the checks. For `--shared`, unmute Virtual Mic and set its level to 100 in the Windows sound settings. Each case captures injected test tones through WASAPI and checks the expected frequency in each channel. Strict cases also check format rejection, the single-writer rule, a full buffer, and queue clearing. Conversion cases also check that the writer does not hold converted audio back between writes.
 
 ## Development
 

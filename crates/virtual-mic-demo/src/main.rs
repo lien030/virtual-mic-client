@@ -25,7 +25,7 @@ struct Options {
     command: String,
     file: Option<String>,
     format: AudioFormat,
-    seconds: f64,
+    seconds: Option<f64>,
     strict: bool,
     shared: bool,
     matrix: bool,
@@ -37,7 +37,7 @@ fn options() -> AppResult<Options> {
         command: args.next().unwrap_or_else(|| "help".into()),
         file: None,
         format: AudioFormat::new(48000, 1, 16),
-        seconds: 10.0,
+        seconds: None,
         strict: false,
         shared: false,
         matrix: false,
@@ -57,7 +57,7 @@ fn options() -> AppResult<Options> {
                     args.next().ok_or("--channels requires a value")?.parse()?
             }
             "--seconds" => {
-                options.seconds = args.next().ok_or("--seconds requires a value")?.parse()?
+                options.seconds = Some(args.next().ok_or("--seconds requires a value")?.parse()?)
             }
             "--strict" => options.strict = true,
             "--shared" => options.shared = true,
@@ -69,7 +69,10 @@ fn options() -> AppResult<Options> {
         }
     }
     options.format.validate()?;
-    if !options.seconds.is_finite() || options.seconds <= 0.0 || options.seconds > 86400.0 {
+    if options
+        .seconds
+        .is_some_and(|seconds| !seconds.is_finite() || seconds <= 0.0 || seconds > 86400.0)
+    {
         return Err("--seconds must be in (0, 86400]".into());
     }
     Ok(options)
@@ -93,7 +96,8 @@ fn run() -> AppResult<()> {
         }
         "tone" => {
             let mut frame = 0;
-            let total = (options.seconds * options.format.sample_rate as f64) as u64;
+            let total =
+                (options.seconds.unwrap_or(10.0) * options.format.sample_rate as f64) as u64;
             transmit(options.format, options.strict, || {
                 if frame >= total {
                     return Ok(None);
@@ -133,17 +137,13 @@ fn run() -> AppResult<()> {
                 .as_deref()
                 .ok_or("capture requires an output WAV path")?,
             options.format,
-            options.seconds,
+            options.seconds.unwrap_or(10.0),
             options.shared,
         )?,
         "selftest" => selftest::run(
             options.matrix,
             options.shared,
-            if options.seconds == 10.0 {
-                1.0
-            } else {
-                options.seconds
-            },
+            options.seconds.unwrap_or(1.0),
         )?,
         "help" | "--help" | "-h" => println!(
             "virtual-mic-demo status\n\
